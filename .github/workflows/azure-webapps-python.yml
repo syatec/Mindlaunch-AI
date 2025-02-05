@@ -44,10 +44,3 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-
-      - name: Deploy to Azure Web App
-        uses: azure/webapps-deploy@v2
-        with:
-          app-name: "test-mind-launch-ai"  # Remplacez par le nom de votre application Azure
-          slot-name: "production"    # Optionnel : spécifiez un slot de déploiement
-          publish-profile: ${{ secrets.AZURE_PUBLISH_PROFILE }}  # Utiliser un secret GitHub
