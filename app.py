@@ -55,9 +55,9 @@ def ask():
         response = client.chat.completions.create(
             model=azure_oai_deployment,
             temperature=0.7,
-            max_tokens=1000,
+            max_tokens=1500,
             messages=[
-                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "system", "content": "You are a helpful and empathetic agent."},
                 {"role": "user", "content": user_input}
             ],
             extra_body=extension_config
