@@ -1,54 +1,28 @@
 import os
 import json
-import re
+import base64
 from dotenv import load_dotenv
 from flask import Flask, request, render_template, jsonify
 from openai import AzureOpenAI
-from azure.identity import DefaultAzureCredential
-from azure.keyvault.secrets import SecretClient
-
+from azure.identity import DefaultAzureCredential, get_bearer_token_provider  
+import re
 # Charger les variables d'environnement
 load_dotenv()
 
 # Initialiser Flask
 app = Flask(__name__)
+    
+endpoint = os.getenv("ENDPOINT_URL", "https://mindlaunch-azure-openai.openai.azure.com/")  
+deployment = os.getenv("DEPLOYMENT_NAME", "gpt-4")  
+subscription_key = os.getenv("AZURE_OPENAI_API_KEY", "9dn00w1yqvUbpwdroiZnZyJ71EAuDWvvczslrs9y4pZkvRfg3TP1JQQJ99BBACYeBjFXJ3w3AAABACOGi26S")  
 
-# Fonction pour interagir avec Azure OpenAI
-# Configuration Azure Key Vault
-key_vault_name = "maclescrete"
-key_vault_uri = f"https://{key_vault_name}.vault.azure.net"
-
-# Initialiser le client Azure Key Vault
-credential = DefaultAzureCredential()
-secret_client = SecretClient(vault_url=key_vault_uri, credential=credential)
-
- # Récupérer les secrets depuis Azure Key Vault
-azure_oai_endpoint = secret_client.get_secret("AZURE-OAI-ENDPOINT").value
-azure_oai_key = secret_client.get_secret("AZURE-OAI-KEY").value
-azure_oai_deployment = secret_client.get_secret("AZURE-OAI-DEPLOYMENT").value
-azure_search_endpoint = secret_client.get_secret("AZURE-SEARCH-ENDPOINT").value
-azure_search_key = secret_client.get_secret("AZURE-SEARCH-KEY").value
-azure_search_index = secret_client.get_secret("AZURE-SEARCH-INDEX").value
-# Initialiser le client Azure OpenAI
-client = AzureOpenAI(
-    base_url=f"{azure_oai_endpoint}/openai/deployments/{azure_oai_deployment}/extensions",
-    api_key=azure_oai_key,
-    api_version="2023-09-01-preview"
+# Initialiser le client Azure OpenAI Service avec une authentification basée sur une clé    
+client = AzureOpenAI(  
+    azure_endpoint=endpoint,  
+    api_key=subscription_key,  
+    api_version="2024-05-01-preview",
 )
 
-# Configuration de la source de données
-extension_config = {
-    "dataSources": [
-        {
-            "type": "AzureCognitiveSearch",
-            "parameters": {
-                "endpoint": azure_search_endpoint,
-                "key": azure_search_key,
-                "indexName": azure_search_index,
-            }
-        }
-    ]
-}
 # Route pour la page d'accueil
 @app.route("/")
 def home():
@@ -63,21 +37,28 @@ def ask():
 
         # Envoyer la requête à Azure OpenAI
         response = client.chat.completions.create(
-            model=azure_oai_deployment,
-            temperature=0.7,
-            max_tokens=1000,
-            top_p=0.5,
+            model=deployment,
+            temperature=0.8,
+            max_tokens=1500,
+            top_p=0.95,
+            frequency_penalty=0,  
+            presence_penalty=0,
+            stop=None,  
+            stream=False,
             messages=[
-                {"role": "system", "content": "You are a helpful and empathetic agent."},
+                {"role": "system", "content": "you are a helpful and empathetic life coach expert in the law of attraction according to the teachings of Abraham Hicks."},
                 {"role": "user", "content": user_input}
-            ],
-            extra_body=extension_config
+            ]
+            #extra_body=extension_config
         )
 
         # Récupérer la réponse
         bot_response = response.choices[0].message.content
-        bot_response = re.sub(r'\[doc\d+\]', '', bot_response)
+        #bot_response = re.sub(r'\[doc\d+\]', '', bot_response)
         # Retourner la réponse au format JSON
+        
+        # Formater la réponse pour afficher chaque point sur une nouvelle ligne
+     
         return jsonify({"message": bot_response})
 
     except Exception as ex:
